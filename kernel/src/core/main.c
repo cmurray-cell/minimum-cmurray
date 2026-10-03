@@ -1,6 +1,7 @@
 #include "minemu/boot.h"
 #include "minemu/trap.h"
 #include "minemu/trace.h"
+#include "minemu/platform.h"
 
 static void uart_character(char c) {
     while (!(MINEMU_UART0->status & MINEMU_UART_STATUS_TX_READY)) {
@@ -31,7 +32,7 @@ void minemu_kernel_main(const struct minemu_boot_info *boot_info) {
         minemu_trace_event(UINT32_C(0xb007bad0));
         minemu_fail_stop();
     }
-    uart_string("hello worldn");
+    uart_string("hello world\n");
     
     minemu_trace_event(1);
     minemu_fail_stop();
