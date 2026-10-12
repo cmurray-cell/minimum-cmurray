@@ -1,7 +1,7 @@
 MINEMU ?= minemu
 
 .PHONY: all bootloader bootloader-check kernel kernel-examples user image \
-	user-mode-hello-image clean
+	user-mode-hello-image process-basics-image process-basics-test clean
 
 all: bootloader-check kernel user kernel-examples
 
@@ -26,6 +26,12 @@ image: kernel user
 user-mode-hello-image: bootloader-check
 	$(MAKE) -C examples MINEMU="$(MINEMU)" user-mode-hello
 
+process-basics-image: bootloader-check
+	$(MAKE) -C examples MINEMU="$(MINEMU)" process-basics
+
+process-basics-test: bootloader-check
+	$(MAKE) -C examples MINEMU="$(MINEMU)" process-basics-test
+
 clean:
 	$(MAKE) -C bootloader clean
 	$(MAKE) -C kernel clean
@@ -33,3 +39,4 @@ clean:
 	$(MAKE) -C image clean
 	$(MAKE) -C examples clean
 	@if [ -f tests/hw2/Makefile ]; then $(MAKE) -C tests/hw2 clean; fi
+	@if [ -f tests/hw3/Makefile ]; then $(MAKE) -C tests/hw3 clean; fi

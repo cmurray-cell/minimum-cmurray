@@ -1,0 +1,19 @@
+image = "fixtures/yield-fifo/build/hw3-yield-fifo.img"
+boot_rom = "../../bootloader/bootloader.bin"
+max_ticks = 1000000
+
+[assert]
+execution_lifecycle = "paused"
+shutdown_lifecycle = "stopped"
+mmu_enabled = true
+cpu_mode = "user"
+trace_values = [
+  0xa3020001,
+  0xa3020002,
+  0xa3020011,
+  0xa3020021,
+  0xa3020003,
+  0xa3020012,
+  0xa3020022,
+  0xa30200ff,
+]

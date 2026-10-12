@@ -1,5 +1,5 @@
 OUTPUT_ARCH(arm)
-ENTRY(minemu_user_main)
+ENTRY(__minemu_user_start)
 
 SECTIONS
 {
