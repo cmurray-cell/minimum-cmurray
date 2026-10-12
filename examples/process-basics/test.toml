@@ -1,0 +1,10 @@
+image = "build/process-basics.img"
+boot_rom = "../../bootloader/bootloader.bin"
+max_ticks = 3000000
+
+[assert]
+uart0_contains = "process-basics: success"
+execution_lifecycle = "paused"
+shutdown_lifecycle = "stopped"
+cpu_mode = "user"
+trace_values = [0x50524301, 0x50524302]

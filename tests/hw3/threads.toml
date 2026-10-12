@@ -1,0 +1,21 @@
+image = "fixtures/threads/build/hw3-threads.img"
+boot_rom = "../../bootloader/bootloader.bin"
+max_ticks = 1000000
+
+[assert]
+execution_lifecycle = "paused"
+shutdown_lifecycle = "stopped"
+mmu_enabled = true
+cpu_mode = "user"
+trace_values = [
+  0xa3030001,
+  0xa3030002,
+  0xa3030011,
+  0xa3030021,
+  0xa3030003,
+  0xa3030012,
+  0xa3030022,
+  0xa3030004,
+  0xa3030005,
+  0xa30300ff,
+]
