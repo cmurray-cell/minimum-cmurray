@@ -1,0 +1,9 @@
+kernel = "../../../../kernel/build/minimum-kernel.elf"
+
+[[modules]]
+name = "minimum-user"
+elf = "build/hw3-process.elf"
+
+[[modules]]
+name = "hw3-process-target"
+elf = "target/build/hw3-process-target.elf"

@@ -18,7 +18,7 @@ is a historical Platform ABI v1 environment.
 - The GNU Arm Embedded toolchain, including `arm-none-eabi-gcc`,
   `arm-none-eabi-ar`, `arm-none-eabi-objcopy`, `arm-none-eabi-readelf`, and
   `arm-none-eabi-nm`.
-- `minemu` version `0.2.0` on `PATH`. Verify it with `minemu --version`.
+- `minemu` version `0.2.3` on `PATH`. Verify it with `minemu --version`.
 
 The emulator and platform documentation are maintained in the
 [minemu repository](https://github.com/rchtsang/minemu). Start with the
