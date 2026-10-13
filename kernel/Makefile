@@ -8,7 +8,11 @@ RUNTIME := $(BUILD)/libminemu_kernel.a
 
 CORE_OBJECTS := \
         $(BUILD)/core/main.o \
-        $(BUILD)/core/irq.o
+        $(BUILD)/core/irq.o \
+        $(BUILD)/core/syscall.o \
+        $(BUILD)/core/svc.o \
+        $(BUILD)/core/enterUser.o
+        
 
 RUNTIME_OBJECTS := \
         $(BUILD)/runtime/block.o \
@@ -16,7 +20,7 @@ RUNTIME_OBJECTS := \
         $(BUILD)/runtime/memory.o \
         $(BUILD)/runtime/trace.o \
         $(BUILD)/startup/boot.o \
-        $(BUILD)/startup/vectors.o
+        $(BUILD)/startup/vectors.o \
 
 OBJECTS := $(CORE_OBJECTS) $(RUNTIME_OBJECTS)
 DEPENDENCIES := $(OBJECTS:.o=.d)
