@@ -1,0 +1,5 @@
+kernel = "../../../../kernel/build/minimum-kernel.elf"
+
+[[modules]]
+name = "minimum-user"
+elf = "build/hw3-threads.elf"

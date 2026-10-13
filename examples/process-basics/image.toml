@@ -1,0 +1,9 @@
+kernel = "kernel/build/process-basics-kernel.elf"
+
+[[modules]]
+name = "process-parent"
+elf = "user/parent/build/process-parent.elf"
+
+[[modules]]
+name = "process-target"
+elf = "user/target/build/process-target.elf"
