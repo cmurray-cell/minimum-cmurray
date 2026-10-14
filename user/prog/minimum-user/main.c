@@ -1,48 +1,78 @@
+
 #include <stdint.h>
 #include "minemu/user_abi.h"
+#define MSH_LINE_MAX UINT32_C(25)
 
-#define MSH_LINE_MAX UINT32_C(20)
+//write a complete buffer through the kernel
+static int uart_write_all(const char *buffer, uint32_t length) {
+    uint32_t written = 0;
 
-//write a character through the kernel
-static void uart_putc(char byte) {
-    (void)ioctl(MINEMU_FD_UART_OUT,
-                MINEMU_IOCTL_UART_WRITE,
-                (void *)&byte, UINT32_C(1));
+    while (written < length) {
+        uint32_t remaining = length - written;
+
+        if (remaining > MINEMU_IOCTL_MAX_TRANSFER) {
+            remaining = MINEMU_IOCTL_MAX_TRANSFER;
+        }
+
+        int32_t result = ioctl(
+            MINEMU_FD_UART_OUT,
+            MINEMU_IOCTL_UART_WRITE,
+            (void *)(buffer + written),
+            remaining
+        );
+
+        //stop if the syscall fails or makes no progress
+        if (result <= 0 || (uint32_t)result > remaining) {
+            return -1;
+        }
+
+        written += (uint32_t)result;
+    }
+
+    return 0;
 }
 
-//write a string
+//write a null-terminated string
 static void uart_puts(const char *string) {
-    while (*string != '\0') {
-        uart_putc(*string);
-        ++string;
+    uint32_t length = 0;
+
+    while (string[length] != '\0') {
+        ++length;
     }
+
+    //send the string through the kernel
+    (void)uart_write_all(string, length);
 }
 
 //read a character through the kernel
-static int uart_try_getc(uint8_t *byte) {
-    return ioctl(MINEMU_FD_UART_IN,
-                 MINEMU_IOCTL_UART_READ,
-                 (void *)byte, UINT32_C(1));
+static int32_t uart_try_getc(uint8_t *byte) {
+    return ioctl(
+        MINEMU_FD_UART_IN,
+        MINEMU_IOCTL_UART_READ,
+        (void *)byte,
+        UINT32_C(1)
+    );
 }
 
 //msh interpreter
 static void msh_execute(char *line) {
     char *command = line;
     uint32_t command_length = 0;
-    //ignore leading spaces to find the first command word
+
+    //ignore leading spaces
     while (*command == ' ') {
         ++command;
     }
-    //treat empty or all space command as no command
+
+    //empty or all-space command
     if (*command == '\0') {
         return;
     }
 
-    
-    //command is the first ASCII word
+    //find the first ASCII-space-delimited word
     while (command[command_length] != '\0' &&
            command[command_length] != ' ') {
-        ++command_length; //determine length of first command word
+        ++command_length;
     }
 
     //echo command
@@ -51,72 +81,97 @@ static void msh_execute(char *line) {
         command[1] == 'c' &&
         command[2] == 'h' &&
         command[3] == 'o') {
+
         char *text = command + command_length;
 
-        //skip spaces between echo and the text to be echoed
+        //skip spaces between echo and its arguments
         while (*text == ' ') {
             ++text;
         }
 
-        //echo text
-        uart_puts(text);
-        uart_putc('\n');
+        //collapse repeated spaces
+        char *read = text;
+        char *write = text;
 
+        while (*read != '\0') {
+            if (*read != ' ') {
+                *write++ = *read;
+            }
+            else if (write != text && write[-1] != ' ') {
+                *write++ = ' ';
+            }
+
+            ++read;
+        }
+
+        //remove trailing space
+        if (write != text && write[-1] == ' ') {
+            --write;
+        }
+
+        *write = '\0';
+
+        //print normalized echo text
+        uart_puts(text);
+        uart_puts("\n");
         return;
     }
 
+    //unknown command
     uart_puts("command not found: ");
 
-
-    //print exactly the command word
-    for (uint32_t i = 0; i < command_length; ++i) {
-        uart_putc(command[i]);
-    }
-    uart_putc('\n');
+    //print exactly the first command word
+    (void)uart_write_all(command, command_length);
+    uart_puts("\n");
 }
 
 //shell input loop
-static void __attribute__((unused)) msh_run(void) {
-     char line[MSH_LINE_MAX + UINT32_C(1)];
+static void msh_run(void) {
+    char line[MSH_LINE_MAX + UINT32_C(1)];
     uint32_t line_length = 0;
-    //overflow counter
     uint32_t overflow_count = 0;
+
     line[0] = '\0';
-    //print prompt for the first command
+
+    //print the initial prompt
     uart_puts("msh> ");
+
     for (;;) {
         uint8_t byte;
-        //wait for byte to be available from buffer
+
+        //wait for incoming input
         if (uart_try_getc(&byte) != 1) {
             __asm__ volatile("nop");
             continue;
         }
+
+        //newline terminates a command
         if (byte == (uint8_t)'\n') {
-            //terminate the line with a null character so it can be treated as a C string
             line[line_length] = '\0';
 
-           //process command
-            msh_execute(line);
+            //do not execute truncated commands
+            if (overflow_count == 0) {
+                msh_execute(line);
+            }
 
-            //reset
+            //reset the input state
             line_length = 0;
             overflow_count = 0;
             line[0] = '\0';
 
-            //print prompt for the next command
+            //print next prompt
             uart_puts("msh> ");
-
             continue;
         }
 
-
         //backspace handler
-        if (byte == UINT8_C(0x08) || byte == UINT8_C(0x7f)) {
-            //backspace first removes overflow
+        if (byte == UINT8_C(0x08) ||
+            byte == UINT8_C(0x7f)) {
+
+            //remove overflow characters first
             if (overflow_count != 0) {
                 --overflow_count;
             }
-            //remove last character from line if line is not empty
             else if (line_length != 0) {
                 --line_length;
                 line[line_length] = '\0';
@@ -125,39 +180,27 @@ static void __attribute__((unused)) msh_run(void) {
             continue;
         }
 
-        //overflow counter iterator
+        //count input exceeding the line limit
         if (overflow_count != 0) {
-            ++overflow_count;
+            if (overflow_count != UINT32_MAX) {
+                ++overflow_count;
+            }
         }
 
-        //store input
+        //store input while space remains
         else if (line_length < MSH_LINE_MAX) {
-            line[line_length] = (char)byte;
-            ++line_length;
+            line[line_length++] = (char)byte;
             line[line_length] = '\0';
         }
 
+        //input has exceeded the limit
         else {
             overflow_count = UINT32_C(1);
         }
     }
 }
 
-//user mode entry point
-//user mode entry point
+//user-mode entry point
 void minemu_user_main(void) {
-    char prompt[] = "msh> ";
-
-    int32_t result = ioctl(
-        MINEMU_FD_UART_OUT,
-        MINEMU_IOCTL_UART_WRITE,
-        (void *)prompt,
-        UINT32_C(5)
-    );
-
-    (void)result;
-
-    for (;;) {
-        __asm__ volatile("nop");
-    }
+    msh_run();
 }

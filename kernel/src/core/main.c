@@ -12,8 +12,8 @@
 #include "minemu/mmu.h"
 
 
-#define UART_RX_BUFFER_SIZE UINT32_C(64) //shared state buffer for UART RX bytes
-#define MSH_LINE_MAX UINT32_C(20) //max 20 bytes per line
+#define UART_RX_BUFFER_SIZE UINT32_C(256) //shared state buffer for UART RX bytes
+#define MSH_LINE_MAX UINT32_C(25) //max 25 bytes per line
 
 //module memory and page-table configuration
 #define PAGE_DIRECTORY UINT32_C(0x40010000)
